@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Sulamerica-Web</title>
+    <title>Image Classification</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
         crossorigin="anonymous">
@@ -33,7 +33,7 @@
         <header id="header">
             <div class="col-md-12">
                 <div class="col-md-3 col-xs-6  col-sm-3 logo ">
-                    <img alt="" height="40" src="images/sulamerica_logo.svg" style="margin-top: 15px;">
+                    <!--<img alt="" height="40" src="images/logo.svg" style="margin-top: 15px;">-->
                 </div>
                 <div class="col-md-6 col-xs-6 col-sm-6 logo text-center title-wrapper">
                     <h3 class="title"></h3>
@@ -142,7 +142,6 @@
                   
                 </div>
           </div>
-              
     </div>
     <script src="javascripts/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -200,9 +199,65 @@
                     console.log(arrImages);
                 }
                 analiseImages(arrImages);
-
             });
 
+            function analiseImages(images) {
+                var model = $("#cboModelo").val();
+                var data = JSON.stringify(images);
+                resetView();
+                showloader();
+                $.ajax({
+                    type: "POST",
+                    url: "http://298dc7a0.ngrok.io/predict",
+                    dataType: "json",
+                    crossDomain: true,
+                    ContentType: "application/json; charset=utf-8",
+                    data: data,
+                    success: function (xhr) {
+                        try {
+                            if (xhr.status) {
+                                if (xhr.status == "warning") {
+                                    $("#warning-message")
+                                        .empty()
+                                        .html(" <span class=\"glyphicon glyphicon-warning-sign\"></span> <strong>" + xhr.message + "</strong>")
+                                        .fadeIn(1000);
+                                }
+                            }
+                            var results = xhr.results;
+
+                            console.log(results)
+
+                            $('.resultSpan').remove();
+                            if (arrPosicoes.length > 0) arrPosicoes = [];
+                            if (dictImagePosicao.length > 0) dictImagePosicao = [];
+                            for (let i = 0; i < results.length; i++) {
+                                for (var prop in results[i]) {
+                                    if(results[i][prop].is_car){
+                                        $("#" + prop)
+                                        .parent()
+                                        .append("<span class='resultSpan'>Posição : " + results[i][prop].posicao + "<br> Gravidade : " + results[i][prop].gravidade + "<br> Score : " + (results[i][prop].score_gravidade * 100).toFixed(3) + "</span>");
+                                    } else {
+                                        $("#" + prop)
+                                        .parent()
+                                        .append("<span class='resultSpan'>Não é um automóvel</span>");
+                                    }
+                                    
+                                    setPosicoes(results[i][prop].posicao, $("#" + prop));
+                                }
+                            }
+                        } catch (err) {
+                            console.log("Erro : " + err.message);
+                            toastr.error('Erro ao Analisar as fotos.', 'Erro');
+                        }
+                        hideloader();
+                        console.log(xhr);
+                    }
+                }).fail(() => {
+                    hideloader();
+                    toastr.error('<span style="color:black"><b>Erro ao Analisar as Imagens</b><span>');
+                    return false;
+                });
+            }
         })
     </script>
     </div>
